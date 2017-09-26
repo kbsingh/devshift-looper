@@ -2,21 +2,19 @@
 
 DEFAULT_DC=che
 DEFAULT_TIMEOUT_SEC=3600
-DEFAULT_NAMESPACE=mloriedo-che
+NAMESPACE=${NAMESPACE:-testproject}
+ITERATIONS=${1:-10}
 
 wait_app_availability () {
     dc_name=${DC_NAME:-${DEFAULT_DC}}
     timeout_sec=${START_TIMEOUT:-${DEFAULT_TIMEOUT_SEC}}
 
-    available=$(oc get dc "${dc_name}" -o json | jq '.status.conditions[] | select(.type == "Available") | .status')
+    available=$(oc -n $NAMESPACE get dc "${dc_name}" -o json | jq '.status.conditions[] | select(.type == "Available") | .status')
 
     POLLING_INTERVAL_SEC=5
     end=$((SECONDS+timeout_sec))
     while [ "${available}" != "\"True\"" ] && [ ${SECONDS} -lt ${end} ]; do
-        available=$(oc get dc "${dc_name}" -o json | jq '.status.conditions[] | select(.type == "Available") | .status')
-        # progressing=$(oc get dc "${dc_name}" -o json | jq '.status.conditions[] | select(.type == "Progressing") | .status')
-        # timeout_in=$((end-SECONDS))
-        # echo "[CHE] Deployment is in progress...(Available.status=${available}, Progressing.status=${progressing}, Timeout in ${timeout_in}s)"
+        available=$(oc -n $NAMESPACE get dc "${dc_name}" -o json | jq '.status.conditions[] | select(.type == "Available") | .status')
         sleep ${POLLING_INTERVAL_SEC}
     done
 }
@@ -24,10 +22,10 @@ wait_app_availability () {
 wait_until_all_resources_are_deleted() {
     timeout_sec=3600
     POLLING_INTERVAL_SEC=3
-    resources_num=$(oc get all -o json 2>/dev/null | jq '.items | length')
+    resources_num=$(oc -n $NAMESPACE get all -o json 2>/dev/null | jq '.items | length')
     end=$((SECONDS+timeout_sec))
     while [ "${resources_num}" -gt "0" ] && [ ${SECONDS} -lt ${end} ]; do
-        resources_num=$(oc get all -o json 2>/dev/null | jq '.items | length')
+        resources_num=$(oc -n $NAMESPACE get all -o json 2>/dev/null | jq '.items | length')
         #timeout_in=$((end-SECONDS))
         sleep ${POLLING_INTERVAL_SEC}
     done
@@ -37,49 +35,33 @@ wait_until_all_resources_are_deleted() {
 wait_until_all_pods_are_stopped() {
     timeout_sec=3600
     POLLING_INTERVAL_SEC=3
-    resources_num=$(oc get pods -o json 2>/dev/null | jq '.items | length')
+    resources_num=$(oc -n $NAMESPACE get pods -o json 2>/dev/null | jq '.items | length')
     end=$((SECONDS+timeout_sec))
     while [ "${resources_num}" -gt "0" ] && [ ${SECONDS} -lt ${end} ]; do
-        resources_num=$(oc get pods -o json 2>/dev/null | jq '.items | length')
+        resources_num=$(oc -n $NAMESPACE get pods -o json 2>/dev/null | jq '.items | length')
         #timeout_in=$((end-SECONDS))
         sleep ${POLLING_INTERVAL_SEC}
     done
 }
- 
-oc get events -o json --watch-only | jq 'select (.type!="Normal") | .message' &
-MYSELF=$!
 
-SCRIPT_DURATION_SEC=60
-end=$((SECONDS+${SCRIPT_DURATION_SEC}))
-while [ ${SECONDS} -lt ${end} ]; do
+# main loop 
+for runid in $(seq $ITERATIONS); do
+
     start=${SECONDS}
-    echo "[INFO] Creating helloworld application on openshift.io with 2 PVCs"
-    oc apply -f ./helloworld.yml  >/dev/null 2>&1
-
-    echo "[INFO] Waiting helloworld to be available"
+    oc -n $NAMESPACE apply -f ./helloworld.yml  >/dev/null 2>&1
     wait_app_availability 
-    
-    duration=$((SECONDS-start))
-    echo "[INFO] helloworld is ready and available: it took $duration seconds"
+    bringup_duration=$((SECONDS-start))
 
     start=${SECONDS}
-
-    # echo "[INFO] Now idling the application"
-    # oc idle che-host >/dev/null 1>
-    # wait_until_all_pods_are_stopped
-
-    echo "[INFO] Now removing all resources"
-    oc delete all --all -n "${NAMESPACE:-${DEFAULT_NAMESPACE}}" >/dev/null 2>&1
-    oc delete pvc --all -n "${NAMESPACE:-${DEFAULT_NAMESPACE}}" >/dev/null 2>&1
-    echo "[INFO] Waiting for all resources to be deleted"
+    oc delete all --all -n "${NAMESPACE}" >/dev/null 2>&1
+    oc delete pvc --all -n "${NAMESPACE}" >/dev/null 2>&1
     wait_until_all_resources_are_deleted
+    teardown_duration=$((SECONDS-start))
 
-    duration=$((SECONDS-start))
-    echo "[INFO] Done: it took $duration seconds"
-    echo ""
-    echo ""
-    echo ""
+    oc -n $NAMESPACE get events -o custom-columns=TIMESTAMP:.lastTimestamp,TYPE:.type,NAME:.involvedObject.name,KIND:.involvedObject.kind,REASON:.reason,MESSAGE:.message > data/$NAMESPACE.events.log
+
+    NBERR=$(grep -v " Normal " data/$NAMESPACE.events.log | wc -l)
+
+    echo "$NAMESPACE $runid $bringup_duration $teardown_duration $NBERR"
+
 done
-
-kill $MYSELF >/dev/null 2>&1
-
