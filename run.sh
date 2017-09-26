@@ -1,9 +1,9 @@
 #!/bin/bash
 
+. ./config.sh
+
 DEFAULT_DC=che
 DEFAULT_TIMEOUT_SEC=3600
-NAMESPACE=${NAMESPACE:-testproject}
-ITERATIONS=${1:-10}
 
 wait_app_availability () {
     dc_name=${DC_NAME:-${DEFAULT_DC}}
@@ -45,7 +45,7 @@ wait_until_all_pods_are_stopped() {
 }
 
 # main loop 
-for runid in $(seq $ITERATIONS); do
+for runid in $(seq $RUNNERS); do
 
     start=${SECONDS}
     oc -n $NAMESPACE apply -f ./helloworld.yml  >/dev/null 2>&1
