@@ -13,7 +13,7 @@ done
 echo "Abnormal events for each project"
 for i in $(seq $RUNNERS); do
     oc -n "$NAMESPACE$i" get events -o custom-columns=TIMESTAMP:.lastTimestamp,TYPE:.type,NAME:.involvedObject.name,KIND:.involvedObject.kind,REASON:.reason,MESSAGE:.message --no-headers > "data/$NAMESPACE$i.events.log"
-    echo -n "$NAMESPACE$i "; grep -v " Normal " "data/$NAMESPACE$i.events.log"
+    echo -n "$NAMESPACE$i "; grep -v " Normal " "data/$NAMESPACE$i.events.log" | wc -l
 done
 
 echo "EBS error events for each project"
