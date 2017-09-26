@@ -58,10 +58,6 @@ for runid in $(seq $ITERATIONS); do
     wait_until_all_resources_are_deleted
     teardown_duration=$((SECONDS-start))
 
-    oc -n $NAMESPACE get events -o custom-columns=TIMESTAMP:.lastTimestamp,TYPE:.type,NAME:.involvedObject.name,KIND:.involvedObject.kind,REASON:.reason,MESSAGE:.message > data/$NAMESPACE.events.log
-
-    NBERR=$(grep -v " Normal " data/$NAMESPACE.events.log | wc -l)
-
-    echo "$NAMESPACE $runid $bringup_duration $teardown_duration $NBERR"
+    echo "$NAMESPACE $runid $bringup_duration $teardown_duration"
 
 done
