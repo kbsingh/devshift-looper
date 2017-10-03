@@ -11,7 +11,20 @@ and logs any warning that is logged in the OpenShift events.
 ## How to run it
 
 ```bash
-export NAMESPACE=<your-openshift-namespace>
-bash ./run.sh
+NAMESPACE=<your-openshift-namespace> ./run.sh
 ```
 
+## How to run multiple in parallel
+
+```bash
+# Set desired values in config.sh
+
+# Run multiple parallel tests
+NAMESPACE=<your-openshift-namespace> ./parallizer.sh
+
+# Generate stats
+NAMESPACE=<your-openshift-namespace> ./reporter.sh
+
+# cleanup
+NAMESPACE=<your-openshift-namespace> ./cleanup.sh
+```
