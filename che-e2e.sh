@@ -37,34 +37,8 @@ DEFAULT_IMAGE_PULL_POLICY="Always"
 export IMAGE_PULL_POLICY=${IMAGE_PULL_POLICY:-${DEFAULT_IMAGE_PULL_POLICY}}
 
 get_tools() {
-    TOOLS_DIR="/tmp"
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        OC_PACKAGE="openshift-origin-client-tools-v3.6.0-c4dd4cf-mac.zip"
-        JQ_PACKAGE="jq-osx-amd64"
-        ARCH="unzip -d $TOOLS_DIR"
-    else
-        OC_PACKAGE="openshift-origin-client-tools-v3.6.0-c4dd4cf-linux-64bit.tar.gz"
-        JQ_PACKAGE="jq-linux64"
-        ARCH="tar --strip 1 -xzf"
-    fi
-    OC_URL=https://github.com/openshift/origin/releases/download/v3.6.0/$OC_PACKAGE
-    JQ_URL=https://github.com/stedolan/jq/releases/download/jq-1.5/$JQ_PACKAGE
-    OC_BINARY="$TOOLS_DIR/oc"
-    JQ_BINARY="$TOOLS_DIR/$JQ_PACKAGE"
-
-    if [ ! -f $OC_BINARY ]; then
-        echo "download oc client..."
-        wget -q -O $TOOLS_DIR/$OC_PACKAGE $OC_URL
-        eval $ARCH $TOOLS_DIR/$OC_PACKAGE -C $TOOLS_DIR &>/dev/null
-        rm -rf $TOOLS_DIR/README.md $TOOLS_DIR/LICENSE $TOOLS_DIR/$OC_PACKAGE
-    fi
-
-    if [ ! -f $JQ_BINARY ]; then
-        echo "download jq..."
-        wget -q -O $JQ_BINARY $JQ_URL
-        chmod +x $JQ_BINARY
-    fi
-    PATH=${PATH}:${TOOLS_DIR}
+    if [ $(which oc; echo $?) -ne 0 ]; then echo 'you need oc ' ; exit 1; fi
+    if [ $(which jq; echo $?) -ne 0 ]; then echo 'you need jq ' ; exit 1; fi
 }
 
 run_ocp() {
