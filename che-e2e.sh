@@ -72,7 +72,7 @@ run_ocp() {
 }
 
 deploy_che_to_ocp() {
-    bash <(curl -s https://raw.githubusercontent.com/redhat-developer/rh-che/master/dev-scripts/openshift_deploy.sh)
+    bash <(./che_deploy.sh)
     wait_until_server_is_booted
 }
 
