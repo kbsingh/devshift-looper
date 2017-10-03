@@ -46,7 +46,11 @@ run_ocp() {
 }
 
 deploy_che_to_ocp() {
-    bash <(./che_deploy.sh)
+    export OPENSHIFT_FLAVOR=osio
+    export OPENSHIFT_ENDPOINT=$(oc whoami --show-server)
+    export OPENSHIFT_TOKEN=$(oc whoami -t)
+    export OPENSHIFT_NAMESPACE_URL="che-kbsingh-che.1b7d.free-stg.openshiftapps.com"
+    bash -x ./che_deploy.sh
     wait_until_server_is_booted
 }
 
