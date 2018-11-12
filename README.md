@@ -28,3 +28,7 @@ NAMESPACE=<your-openshift-namespace> ./reporter.sh
 # cleanup
 NAMESPACE=<your-openshift-namespace> ./cleanup.sh
 ```
+
+## Misc
+
+track also https://github.com/l0rd/volumes-perfs/blob/master/README.md
